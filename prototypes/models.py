@@ -19,7 +19,8 @@ class Department(models.Model):
     def __str__(self):
         return f"{self.code} - {self.name}"
 
-
+#custom user for the system log in with email and password
+# and also to be used for the prototype submission
 class CustomUser(AbstractUser):
     ROLES = (
         ('admin', 'Administrator'),
@@ -33,7 +34,7 @@ class CustomUser(AbstractUser):
     phone = models.CharField(max_length=20, blank=True)
     institution_id = models.CharField(max_length=50, blank=True)
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = 'email'   # Use email as the username field and is unique
     REQUIRED_FIELDS = ['username']
 
     class Meta:
@@ -44,7 +45,8 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return f"{self.email} ({self.get_role_display()})"
 
-
+#model for submission of project (prototypes) by students
+# and also for the review process by the faculty/staff
 class Prototype(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
@@ -54,7 +56,7 @@ class Prototype(models.Model):
         ('rejected', 'Rejected'),
         ('archived', 'Archived')
     ]
-
+#further changes should be done here to make status be allways true since all project submitted here are approved
     student = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
@@ -75,7 +77,8 @@ class Prototype(models.Model):
     )
     submission_date = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='draft') #further changes should be done here to make status be allways true since all project submitted here are approved
+
     has_physical_prototype = models.BooleanField(default=False)
     barcode = models.CharField(max_length=50, unique=True, blank=True, null=True)
     storage_location = models.CharField(max_length=100, blank=True)
@@ -139,7 +142,7 @@ class PrototypeAttachment(models.Model):
     file = models.FileField(
         upload_to='prototype_attachments/%Y/%m/%d/',
         validators=[FileExtensionValidator(
-            allowed_extensions=sum(EXTENSION_MAP.values(), [])
+            allowed_extensions=sum(EXTENSION_MAP.values(), []) #aaray passing multiple files at once
         )]
     )
     description = models.CharField(max_length=255, blank=True)
