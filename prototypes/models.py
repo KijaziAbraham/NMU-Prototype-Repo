@@ -64,8 +64,15 @@ class Prototype(models.Model):
     title = models.CharField(max_length=255)
     abstract = models.TextField()
     department = models.ForeignKey(Department, on_delete=models.PROTECT)
-    academic_year = models.CharField(max_length=9)  #2023-2024
-    supervisor = models.CharField(max_length=100)
+    academic_year = models.CharField(max_length=9)  # Format: 2023-2024
+    supervisor = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="supervised_prototypes",
+        limit_choices_to={'role': 'staff'}
+    )
     submission_date = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='draft')
@@ -97,6 +104,7 @@ class Prototype(models.Model):
         if self.has_physical_prototype and not self.barcode:
             self.barcode = f"NM-{self.department.code}-{uuid.uuid4().hex[:8].upper()}"
         super().save(*args, **kwargs)
+
 
 
 

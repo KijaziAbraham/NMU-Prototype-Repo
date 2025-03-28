@@ -14,29 +14,17 @@ from django.template.loader import render_to_string
 from django.contrib.auth import login
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
-from .permissions import IsPrototypeOwner
-from .serializers import PrototypeAttachmentSerializer
-from .models import (
-    CustomUser, Prototype, PrototypeAttachment, 
-    Department, AuditLog
-)
+from .permissions import IsPrototypeOwner, IsAdmin, IsStaff, IsStudent, IsOwnerOrReadOnly, IsReviewer
 from .serializers import (
-    UserSerializer, PrototypeSerializer,
-    PrototypeAttachmentSerializer, DepartmentSerializer,
-    PrototypeReviewSerializer, AuditLogSerializer,LoginSerializer
+    UserSerializer, PrototypeSerializer, PrototypeAttachmentSerializer, 
+    DepartmentSerializer, PrototypeReviewSerializer, AuditLogSerializer, LoginSerializer
 )
-from .permissions import (
-    IsAdmin, IsStaff, IsStudent,
-    IsOwnerOrReadOnly, IsReviewer
-)
+from .models import CustomUser, Prototype, PrototypeAttachment, Department, AuditLog
 from .filters import PrototypeFilter
 from .services import report_service
 import logging
-from rest_framework.decorators import action, api_view, permission_classes
 
 logger = logging.getLogger(__name__)
-
-
 
 User = get_user_model()
 
@@ -68,7 +56,7 @@ def user_profile(request):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """view ya ku-Manage users"""
+    """View to manage users"""
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
@@ -87,6 +75,12 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(students, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=["GET"], permission_classes=[IsAuthenticated])
+    def supervisors(self, request):
+        """Retrieve all staff members who act as supervisors"""
+        supervisors = User.objects.filter(role="staff")
+        serializer = self.get_serializer(supervisors, many=True)
+        return Response(serializer.data)
 
 class PrototypeViewSet(viewsets.ModelViewSet):
     """Manage prototypes and provide role-based filtering"""
@@ -202,14 +196,16 @@ class PrototypeViewSet(viewsets.ModelViewSet):
 
 
 class PrototypeAttachmentViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing prototype attachments.
+    """
     serializer_class = PrototypeAttachmentSerializer
     permission_classes = [IsAuthenticated, IsPrototypeOwner]
     queryset = PrototypeAttachment.objects.all()
 
     def get_queryset(self):
-        return self.queryset.filter(
-            prototype__student=self.request.user
-        ).select_related('prototype')
+        """Limit attachments to those owned by the user."""
+        return self.queryset.filter(prototype__student=self.request.user).select_related('prototype')
 
     @action(detail=False, methods=['post'])
     def bulk_create(self, request, prototype_pk=None):
@@ -268,5 +264,8 @@ class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
     permission_classes = [IsAuthenticated]
+
+
+
 
 
