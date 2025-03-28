@@ -141,28 +141,28 @@ class PrototypeViewSet(viewsets.ModelViewSet):
         prototype.save()
         return Response({"message": "Storage location assigned successfully."})
 
+        
     @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated])
     def review_prototype(self, request, pk=None):
-        """Staff can review a specific prototype."""
+        """Staff can review a specific prototype (only approval allowed)."""
         user = request.user
 
         if user.role not in ["staff", "admin"]:
             return Response({"error": "Only staff and admins can review prototypes."}, status=403)
 
         prototype = self.get_object()
-        approved = request.data.get("approved")
         feedback = request.data.get("feedback", "").strip()
 
-        if feedback == "":
+        if not feedback:
             return Response({"error": "Feedback is required."}, status=400)
 
-        prototype.approved = approved
+        prototype.approved = True  # Always approved since the protoype submitted in the sys are those already approved
         prototype.feedback = feedback
         prototype.reviewed_by = user
         prototype.save()
 
-        return Response({"message": "Prototype review submitted successfully."})
-    @action(detail=False, methods=['GET'])
+        return Response({"message": "Prototype approved successfully."})
+
     def storage_locations(self, request):
         """Retrieve all unique storage locations"""
         locations = Prototype.objects.exclude(storage_location__isnull=True).values_list("storage_location", flat=True).distinct()

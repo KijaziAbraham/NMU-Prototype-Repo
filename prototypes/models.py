@@ -64,7 +64,7 @@ class Prototype(models.Model):
     title = models.CharField(max_length=255)
     abstract = models.TextField()
     department = models.ForeignKey(Department, on_delete=models.PROTECT)
-    academic_year = models.CharField(max_length=9)  # Format: 2023-2024
+    academic_year = models.CharField(max_length=9)  #Format: 2023/2024
     supervisor = models.ForeignKey(
         CustomUser,
         on_delete=models.SET_NULL,
