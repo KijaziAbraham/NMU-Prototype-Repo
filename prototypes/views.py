@@ -23,6 +23,9 @@ from .models import CustomUser, Prototype, PrototypeAttachment, Department, Audi
 from .filters import PrototypeFilter
 from .services import report_service
 import logging
+from django.db.models import Q
+from django.contrib.auth import update_session_auth_hash
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,17 +45,37 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(["GET"])
+@api_view(["GET", "PATCH"])  # Allow both GET and PATCH
 @permission_classes([IsAuthenticated])
 def user_profile(request):
-    """Return logged-in user's details"""
+    """Return or update logged-in user's details"""
     user = request.user
-    return Response({
-        "id": user.id,
-        "name": user.username,
-        "email": user.email,
-        "role": user.role,
-    })
+
+    if request.method == "GET":
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "phone": user.phone,
+            "institution_id": user.institution_id,
+        })
+
+    elif request.method == "PATCH":
+        data = request.data
+        user.phone = data.get("phone", user.phone)  
+        user.email = data.get("email", user.email)  
+        user.save()
+
+        return Response({
+            "message": "Profile updated successfully",
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "phone": user.phone,
+            "institution_id": user.institution_id,
+        }, status=status.HTTP_200_OK)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -78,7 +101,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["GET"], permission_classes=[IsAuthenticated])
     def supervisors(self, request):
         """Retrieve all staff members who act as supervisors"""
-        supervisors = User.objects.filter(role="staff")
+        supervisors = User.objects.filter(Q(role="staff") | Q(role="admin"))
         serializer = self.get_serializer(supervisors, many=True)
         return Response(serializer.data)
 
@@ -139,7 +162,11 @@ class PrototypeViewSet(viewsets.ModelViewSet):
 
         prototype.storage_location = storage_location
         prototype.save()
-        return Response({"message": "Storage location assigned successfully."})
+
+        # Return the updated prototype object
+        serializer = PrototypeSerializer(prototype)
+        return Response(serializer.data)
+
 
         
     @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated])
@@ -156,16 +183,18 @@ class PrototypeViewSet(viewsets.ModelViewSet):
         if not feedback:
             return Response({"error": "Feedback is required."}, status=400)
 
-        prototype.approved = True  # Always approved since the protoype submitted in the sys are those already approved
+        prototype.status = "submitted_reviewed"  
         prototype.feedback = feedback
         prototype.reviewed_by = user
         prototype.save()
 
         return Response({"message": "Prototype approved successfully."})
-
+    
+    @action(detail=False, methods=["GET"])
     def storage_locations(self, request):
         """Retrieve all unique storage locations"""
-        locations = Prototype.objects.exclude(storage_location__isnull=True).values_list("storage_location", flat=True).distinct()
+        locations = Prototype.objects.exclude(storage_location__isnull=True).exclude(storage_location="").values_list("storage_location", flat=True).distinct()
+
         return Response(list(locations))
 
     @action(detail=False, methods=['GET'])
@@ -267,5 +296,25 @@ class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """Allow authenticated users to change their password"""
+    user = request.user
+    current_password = request.data.get("current_password")
+    new_password = request.data.get("new_password")
 
+    if not user.check_password(current_password):
+        return Response({"detail": "Current password is incorrect."}, status=400)
+
+    if len(new_password) < 6:
+        return Response({"detail": "New password must be at least 6 characters long."}, status=400)
+
+    user.set_password(new_password)
+    user.save()
+
+    # Keep the user logged in after password change
+    update_session_auth_hash(request, user)
+
+    return Response({"detail": "Password updated successfully!"})
 

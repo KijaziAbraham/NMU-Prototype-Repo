@@ -97,11 +97,10 @@ class PrototypeReviewSerializer(serializers.Serializer):
     Serializer for prototype review submission.
     """
     status = serializers.ChoiceField(choices=[
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('needs_revision', 'Needs Revision')
+        ('submitted_not_reviewed', 'Submitted (Not Reviewed)'),
+        ('submitted_reviewed', 'Submitted (Reviewed)'),
     ])
-    feedback = serializers.CharField(required=False)
+    feedback = serializers.CharField(required=True)
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
@@ -114,3 +113,5 @@ class AuditLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuditLog
         fields = '__all__'
+
+

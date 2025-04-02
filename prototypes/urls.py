@@ -5,7 +5,7 @@ from .api_views import register_user, login_user
 from .views import (
     UserViewSet, PrototypeViewSet,
     PrototypeAttachmentViewSet, DepartmentViewSet,
-    AuditLogViewSet, 
+    AuditLogViewSet, change_password,
 )
 
 
@@ -21,6 +21,8 @@ urlpatterns = [
     path('register/', register_user, name='register'),
     path('login/', login_user, name='login'),
     path("user/profile/", user_profile, name="user-profile"),
+    path("user/change-password/", change_password, name="change-password"),
+
 
 ]
 

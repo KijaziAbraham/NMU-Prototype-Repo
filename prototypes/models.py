@@ -34,7 +34,7 @@ class CustomUser(AbstractUser):
     phone = models.CharField(max_length=20, blank=True)
     institution_id = models.CharField(max_length=50, blank=True)
 
-    USERNAME_FIELD = 'email'   # Use email as the username field and is unique
+    USERNAME_FIELD = 'email'   # Use email as the username field an d is unique
     REQUIRED_FIELDS = ['username']
 
     class Meta:
@@ -49,12 +49,8 @@ class CustomUser(AbstractUser):
 # and also for the review process by the faculty/staff
 class Prototype(models.Model):
     STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('submitted', 'Submitted'),
-        ('under_review', 'Under Review'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('archived', 'Archived')
+        ('submitted_not_reviewed', 'Submitted (Not Reviewed)'),
+        ('submitted_reviewed', 'Submitted (Reviewed)'),  
     ]
 #further changes should be done here to make status be allways true since all project submitted here are approved
     student = models.ForeignKey(
@@ -77,7 +73,7 @@ class Prototype(models.Model):
     )
     submission_date = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='draft') #further changes should be done here to make status be allways true since all project submitted here are approved
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='submitted_not_reviewed') #further changes should be done here to make status be allways true since all project submitted here are approved
 
     has_physical_prototype = models.BooleanField(default=False)
     barcode = models.CharField(max_length=50, unique=True, blank=True, null=True)
