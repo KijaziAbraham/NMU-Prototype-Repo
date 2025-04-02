@@ -1,0 +1,1290 @@
+openapi: 3.0.3
+info:
+  title: Archive System API
+  version: 1.0.0
+  description: An API for managing and accessing archived projects.
+paths:
+  /api/attachments/:
+    get:
+      operationId: attachments_list
+      description: API endpoint for managing prototype attachments.
+      tags:
+      - attachments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrototypeAttachment'
+          description: ''
+    post:
+      operationId: attachments_create
+      description: API endpoint for managing prototype attachments.
+      tags:
+      - attachments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrototypeAttachment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrototypeAttachment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrototypeAttachment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrototypeAttachment'
+          description: ''
+  /api/attachments/{id}/:
+    get:
+      operationId: attachments_retrieve
+      description: API endpoint for managing prototype attachments.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Prototype Attachment.
+        required: true
+      tags:
+      - attachments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrototypeAttachment'
+          description: ''
+    put:
+      operationId: attachments_update
+      description: API endpoint for managing prototype attachments.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Prototype Attachment.
+        required: true
+      tags:
+      - attachments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrototypeAttachment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrototypeAttachment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrototypeAttachment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrototypeAttachment'
+          description: ''
+    patch:
+      operationId: attachments_partial_update
+      description: API endpoint for managing prototype attachments.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Prototype Attachment.
+        required: true
+      tags:
+      - attachments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPrototypeAttachment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPrototypeAttachment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPrototypeAttachment'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrototypeAttachment'
+          description: ''
+    delete:
+      operationId: attachments_destroy
+      description: API endpoint for managing prototype attachments.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Prototype Attachment.
+        required: true
+      tags:
+      - attachments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/attachments/bulk_create/:
+    post:
+      operationId: attachments_bulk_create_create
+      description: API endpoint for managing prototype attachments.
+      tags:
+      - attachments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrototypeAttachment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrototypeAttachment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrototypeAttachment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrototypeAttachment'
+          description: ''
+  /api/audit-logs/:
+    get:
+      operationId: audit_logs_list
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+          enum:
+          - create
+          - delete
+          - download
+          - login
+          - review
+          - update
+        description: |-
+          * `create` - Create
+          * `update` - Update
+          * `delete` - Delete
+          * `login` - Login
+          * `download` - Download
+          * `review` - Review
+      - in: query
+        name: model
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: user
+        schema:
+          type: integer
+      tags:
+      - audit-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+          description: ''
+  /api/audit-logs/{id}/:
+    get:
+      operationId: audit_logs_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this audit log.
+        required: true
+      tags:
+      - audit-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+          description: ''
+  /api/departments/:
+    get:
+      operationId: departments_list
+      tags:
+      - departments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Department'
+          description: ''
+  /api/departments/{id}/:
+    get:
+      operationId: departments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this department.
+        required: true
+      tags:
+      - departments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+          description: ''
+  /api/login/:
+    post:
+      operationId: login_create
+      description: Authenticate user and return JWT tokens
+      tags:
+      - login
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/prototypes/:
+    get:
+      operationId: prototypes_list
+      description: Manage prototypes and provide role-based filtering
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - prototypes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Prototype'
+          description: ''
+    post:
+      operationId: prototypes_create
+      description: Manage prototypes and provide role-based filtering
+      tags:
+      - prototypes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prototype'
+          description: ''
+  /api/prototypes/{id}/:
+    get:
+      operationId: prototypes_retrieve
+      description: Manage prototypes and provide role-based filtering
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prototype.
+        required: true
+      tags:
+      - prototypes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prototype'
+          description: ''
+    put:
+      operationId: prototypes_update
+      description: Manage prototypes and provide role-based filtering
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prototype.
+        required: true
+      tags:
+      - prototypes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prototype'
+          description: ''
+    patch:
+      operationId: prototypes_partial_update
+      description: Manage prototypes and provide role-based filtering
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prototype.
+        required: true
+      tags:
+      - prototypes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPrototype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPrototype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPrototype'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prototype'
+          description: ''
+    delete:
+      operationId: prototypes_destroy
+      description: Manage prototypes and provide role-based filtering
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prototype.
+        required: true
+      tags:
+      - prototypes
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/prototypes/{id}/assign_storage/:
+    post:
+      operationId: prototypes_assign_storage_create
+      description: Allow admins to assign a storage location
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prototype.
+        required: true
+      tags:
+      - prototypes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prototype'
+          description: ''
+  /api/prototypes/{id}/review_prototype/:
+    post:
+      operationId: prototypes_review_prototype_create
+      description: Staff can review a specific prototype (only approval allowed).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prototype.
+        required: true
+      tags:
+      - prototypes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Prototype'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prototype'
+          description: ''
+  /api/prototypes/all_prototypes/:
+    get:
+      operationId: prototypes_all_prototypes_retrieve
+      description: Return all prototypes for staff & admin.
+      tags:
+      - prototypes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prototype'
+          description: ''
+  /api/prototypes/export_excel/:
+    get:
+      operationId: prototypes_export_excel_retrieve
+      description: Export prototypes as an Excel file
+      tags:
+      - prototypes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prototype'
+          description: ''
+  /api/prototypes/export_pdf/:
+    get:
+      operationId: prototypes_export_pdf_retrieve
+      description: Export prototypes as a PDF file
+      tags:
+      - prototypes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prototype'
+          description: ''
+  /api/prototypes/storage_locations/:
+    get:
+      operationId: prototypes_storage_locations_retrieve
+      description: Retrieve all unique storage locations
+      tags:
+      - prototypes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prototype'
+          description: ''
+  /api/register/:
+    post:
+      operationId: register_create
+      description: Register a new user and return JWT tokens
+      tags:
+      - register
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/token/:
+    post:
+      operationId: token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/token/refresh/:
+    post:
+      operationId: token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/user/change-password/:
+    post:
+      operationId: user_change_password_create
+      description: Allow authenticated users to change their password
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/user/profile/:
+    get:
+      operationId: user_profile_retrieve
+      description: |-
+        Handle user profile operations for authenticated users.
+
+        GET: Retrieve the current user's profile details
+        PATCH: Update the current user's profile with provided data
+
+        Args:
+            request: HTTP request object containing method and data
+
+        Returns:
+            Response: JSON response with user data or error message
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: user_profile_partial_update
+      description: |-
+        Handle user profile operations for authenticated users.
+
+        GET: Retrieve the current user's profile details
+        PATCH: Update the current user's profile with provided data
+
+        Args:
+            request: HTTP request object containing method and data
+
+        Returns:
+            Response: JSON response with user data or error message
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/users/:
+    get:
+      operationId: users_list
+      description: View to manage users
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+    post:
+      operationId: users_create
+      description: View to manage users
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/{id}/:
+    get:
+      operationId: users_retrieve
+      description: View to manage users
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this User.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: users_update
+      description: View to manage users
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this User.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: users_partial_update
+      description: View to manage users
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this User.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: users_destroy
+      description: View to manage users
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this User.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/users/students/:
+    get:
+      operationId: users_students_retrieve
+      description: Admin can retrieve all students
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/supervisors/:
+    get:
+      operationId: users_supervisors_retrieve
+      description: Retrieve all staff members who act as supervisors
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+components:
+  schemas:
+    ActionEnum:
+      enum:
+      - create
+      - update
+      - delete
+      - login
+      - download
+      - review
+      type: string
+      description: |-
+        * `create` - Create
+        * `update` - Update
+        * `delete` - Delete
+        * `login` - Login
+        * `download` - Download
+        * `review` - Review
+    AuditLog:
+      type: object
+      description: Serializer for audit logs, tracking user actions.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        action_display:
+          type: string
+          readOnly: true
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        model:
+          type: string
+          maxLength: 50
+        object_id:
+          type: string
+          maxLength: 50
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        ip_address:
+          type: string
+          nullable: true
+        metadata: {}
+      required:
+      - action
+      - action_display
+      - id
+      - model
+      - object_id
+      - timestamp
+      - user
+    Department:
+      type: object
+      description: Serializer for department details.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        code:
+          type: string
+          maxLength: 10
+        description:
+          type: string
+      required:
+      - code
+      - id
+      - name
+    FileTypeEnum:
+      enum:
+      - report
+      - source
+      - presentation
+      - dataset
+      - documentation
+      - other
+      type: string
+      description: |-
+        * `report` - Final Report
+        * `source` - Source Code
+        * `presentation` - Presentation
+        * `dataset` - Dataset
+        * `documentation` - Documentation
+        * `other` - Other
+    PatchedPrototype:
+      type: object
+      description: Serializer for prototype details, including nested user and department
+        information.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+        department:
+          type: integer
+        reviewer:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrototypeAttachment'
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        supervisor:
+          type: integer
+        title:
+          type: string
+          maxLength: 255
+        abstract:
+          type: string
+        academic_year:
+          type: string
+          maxLength: 9
+        submission_date:
+          type: string
+          format: date-time
+          readOnly: true
+        last_modified:
+          type: string
+          format: date-time
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        has_physical_prototype:
+          type: boolean
+        barcode:
+          type: string
+          readOnly: true
+          nullable: true
+        storage_location:
+          type: string
+          maxLength: 100
+        feedback:
+          type: string
+    PatchedPrototypeAttachment:
+      type: object
+      description: Serializer for prototype attachments, providing additional metadata.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        file_type:
+          $ref: '#/components/schemas/FileTypeEnum'
+        file_type_display:
+          type: string
+          readOnly: true
+        file:
+          type: string
+          format: uri
+          pattern: (?:pdf|doc|docx|odt|zip|rar|tar|gz|7z|py|java|cpp|ppt|pptx|odp|key|csv|xls|xlsx|json|sql|db|md|txt|html|jpg|png|mp4|mov|stl|obj)$
+        description:
+          type: string
+          maxLength: 255
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        size:
+          type: integer
+          readOnly: true
+        filename:
+          type: string
+          readOnly: true
+        download_url:
+          type: string
+          readOnly: true
+        checksum:
+          type: string
+          readOnly: true
+    PatchedUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        department:
+          type: integer
+          nullable: true
+        phone:
+          type: string
+          maxLength: 20
+        institution_id:
+          type: string
+          maxLength: 50
+    Prototype:
+      type: object
+      description: Serializer for prototype details, including nested user and department
+        information.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+        department:
+          type: integer
+        reviewer:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrototypeAttachment'
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        supervisor:
+          type: integer
+        title:
+          type: string
+          maxLength: 255
+        abstract:
+          type: string
+        academic_year:
+          type: string
+          maxLength: 9
+        submission_date:
+          type: string
+          format: date-time
+          readOnly: true
+        last_modified:
+          type: string
+          format: date-time
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        has_physical_prototype:
+          type: boolean
+        barcode:
+          type: string
+          readOnly: true
+          nullable: true
+        storage_location:
+          type: string
+          maxLength: 100
+        feedback:
+          type: string
+      required:
+      - abstract
+      - academic_year
+      - attachments
+      - barcode
+      - department
+      - id
+      - last_modified
+      - reviewer
+      - status_display
+      - student
+      - submission_date
+      - supervisor
+      - title
+    PrototypeAttachment:
+      type: object
+      description: Serializer for prototype attachments, providing additional metadata.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        file_type:
+          $ref: '#/components/schemas/FileTypeEnum'
+        file_type_display:
+          type: string
+          readOnly: true
+        file:
+          type: string
+          format: uri
+          pattern: (?:pdf|doc|docx|odt|zip|rar|tar|gz|7z|py|java|cpp|ppt|pptx|odp|key|csv|xls|xlsx|json|sql|db|md|txt|html|jpg|png|mp4|mov|stl|obj)$
+        description:
+          type: string
+          maxLength: 255
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        size:
+          type: integer
+          readOnly: true
+        filename:
+          type: string
+          readOnly: true
+        download_url:
+          type: string
+          readOnly: true
+        checksum:
+          type: string
+          readOnly: true
+      required:
+      - checksum
+      - download_url
+      - file
+      - file_type
+      - file_type_display
+      - filename
+      - id
+      - size
+      - uploaded_at
+    RoleEnum:
+      enum:
+      - admin
+      - staff
+      - student
+      type: string
+      description: |-
+        * `admin` - Administrator
+        * `staff` - Faculty/Staff
+        * `student` - Student
+    StatusEnum:
+      enum:
+      - submitted_not_reviewed
+      - submitted_reviewed
+      type: string
+      description: |-
+        * `submitted_not_reviewed` - Submitted (Not Reviewed)
+        * `submitted_reviewed` - Submitted (Reviewed)
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        department:
+          type: integer
+          nullable: true
+        phone:
+          type: string
+          maxLength: 20
+        institution_id:
+          type: string
+          maxLength: 50
+      required:
+      - email
+      - id
+      - role
+      - username
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

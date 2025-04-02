@@ -25,6 +25,8 @@ from .services import report_service
 import logging
 from django.db.models import Q
 from django.contrib.auth import update_session_auth_hash
+from django.core.exceptions import ValidationError
+from django.http import HttpRequest
 
 
 logger = logging.getLogger(__name__)
@@ -45,37 +47,84 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(["GET", "PATCH"])  # Allow both GET and PATCH
+@api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
-def user_profile(request):
-    """Return or update logged-in user's details"""
+def user_profile(request: HttpRequest) -> Response:
+    """
+    Handle user profile operations for authenticated users.
+
+    GET: Retrieve the current user's profile details
+    PATCH: Update the current user's profile with provided data
+
+    Args:
+        request: HTTP request object containing method and data
+
+    Returns:
+        Response: JSON response with user data or error message
+    """
     user = request.user
 
     if request.method == "GET":
-        return Response({
+        # Return user profile data
+        profile_data = {
             "id": user.id,
             "username": user.username,
             "email": user.email,
             "role": user.role,
             "phone": user.phone,
             "institution_id": user.institution_id,
-        })
+        }
+        return Response(profile_data, status=status.HTTP_200_OK)
 
     elif request.method == "PATCH":
-        data = request.data
-        user.phone = data.get("phone", user.phone)  
-        user.email = data.get("email", user.email)  
-        user.save()
+        try:
+            # Update user profile with partial data
+            data = request.data
+            allowed_fields = {"phone", "email"}
 
-        return Response({
-            "message": "Profile updated successfully",
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "role": user.role,
-            "phone": user.phone,
-            "institution_id": user.institution_id,
-        }, status=status.HTTP_200_OK)
+            # Validate input data
+            if not data or not any(field in data for field in allowed_fields):
+                return Response(
+                    {"error": "No valid fields provided for update"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Update only allowed fields
+            user.phone = data.get("phone", user.phone)
+            user.email = data.get("email", user.email)
+
+            # Validate and save changes
+            user.full_clean()  # Runs model validation
+            user.save()
+
+            # Prepare response data
+            updated_profile = {
+                "message": "Profile updated successfully",
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": user.role,
+                "phone": user.phone,
+                "institution_id": user.institution_id,
+            }
+            return Response(updated_profile, status=status.HTTP_200_OK)
+
+        except ValidationError as e:
+            return Response(
+                {"error": "Invalid data provided", "details": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            return Response(
+                {"error": "An unexpected error occurred", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    # This should never be reached due to @api_view decorator,
+    # but included for completeness
+    return Response(
+        {"error": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED
+    )
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -131,7 +180,7 @@ class PrototypeViewSet(viewsets.ModelViewSet):
         elif user.role == "staff":
             return queryset  
 
-        return queryset         #admin na staff wanaona project zote
+        return queryset #admin na staff wanaona project zote
     
     @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated])
     def all_prototypes(self, request):
@@ -277,7 +326,7 @@ class PrototypeAttachmentViewSet(viewsets.ModelViewSet):
         request.data['prototype'] = kwargs.get('prototype_pk')
         request.data._mutable = False
         return super().create(request, *args, **kwargs)
-    
+
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AuditLog.objects.all()   
@@ -288,12 +337,10 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ['-timestamp']
 
 
-
 class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
     permission_classes = [IsAuthenticated]
-
 
 
 @api_view(["POST"])
@@ -317,4 +364,3 @@ def change_password(request):
     update_session_auth_hash(request, user)
 
     return Response({"detail": "Password updated successfully!"})
-
