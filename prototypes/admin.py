@@ -3,7 +3,6 @@ from django.contrib.auth.admin import UserAdmin
 from .models import (
     CustomUser, Prototype, 
     PrototypeAttachment, Department,
-    AuditLog
 )
 
 class CustomUserAdmin(UserAdmin):
@@ -26,15 +25,27 @@ class CustomUserAdmin(UserAdmin):
     search_fields = ('email', 'username')
     ordering = ('email',)
 
+
+
+class PrototypeAttachmentInline(admin.TabularInline):
+    model = PrototypeAttachment
+    extra = 0
+
+class PrototypeAdmin(admin.ModelAdmin):
+    list_display = ['title', 'barcode', 'submission_date', 'has_physical_prototype']
+    inlines = [PrototypeAttachmentInline]
+
+
+
 class PrototypeAdmin(admin.ModelAdmin):
     list_display = ('title', 'student', 'status', 'department', 'submission_date')
     list_filter = ('status', 'department', 'academic_year')
     search_fields = ('title', 'student__email', 'barcode')
     raw_id_fields = ('student', 'reviewer')
     readonly_fields = ('submission_date', 'last_modified')
+    inlines = [PrototypeAttachmentInline]
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(Prototype, PrototypeAdmin)
 admin.site.register(PrototypeAttachment)
 admin.site.register(Department)
-admin.site.register(AuditLog)

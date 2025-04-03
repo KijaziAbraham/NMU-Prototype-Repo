@@ -69,7 +69,7 @@ class Prototype(models.Model):
         null=True,
         blank=True,
         related_name="supervised_prototypes",
-        limit_choices_to={'role': 'staff'}
+        limit_choices_to={'role__in': ['staff', 'admin']}
     )
     submission_date = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
@@ -107,103 +107,12 @@ class Prototype(models.Model):
 
 
 
+#model for the attachment of files to the project (prototypes) by students
 class PrototypeAttachment(models.Model):
-    FILE_TYPE_CHOICES = [
-        ('report', 'Final Report'),
-        ('source', 'Source Code'),
-        ('presentation', 'Presentation'),
-        ('dataset', 'Dataset'),
-        ('documentation', 'Documentation'),
-        ('other', 'Other')
-    ]
-
-    EXTENSION_MAP = {
-        'report': ['pdf', 'doc', 'docx', 'odt'],
-        'source': ['zip', 'rar', 'tar', 'gz', '7z', 'py', 'java', 'cpp'],
-        'presentation': ['ppt', 'pptx', 'odp', 'key'],
-        'dataset': ['csv', 'xls', 'xlsx', 'json', 'sql', 'db'],
-        'documentation': ['md', 'txt', 'html'],
-        'other': ['jpg', 'png', 'mp4', 'mov', 'stl', 'obj']
-    }
-
-    prototype = models.ForeignKey(
-        'Prototype',
-        related_name='attachments',
-        on_delete=models.CASCADE
-    )
-    file_type = models.CharField(
-        max_length=15,
-        choices=FILE_TYPE_CHOICES
-    )
-    file = models.FileField(
-        upload_to='prototype_attachments/%Y/%m/%d/',
-        validators=[FileExtensionValidator(
-            allowed_extensions=sum(EXTENSION_MAP.values(), []) #aaray passing multiple files at once
-        )]
-    )
-    description = models.CharField(max_length=255, blank=True)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    size = models.PositiveIntegerField(editable=False)
-    checksum = models.CharField(max_length=64, blank=True, editable=False)
-
-    class Meta:
-        ordering = ['-uploaded_at']
-        verbose_name = 'Prototype Attachment'
-        verbose_name_plural = 'Prototype Attachments'
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.size = self.file.size
-            self.checksum = self.calculate_checksum()
-            self.validate_file_type()
-        super().save(*args, **kwargs)
-
-    def calculate_checksum(self):
-        sha256 = hashlib.sha256()
-        for chunk in self.file.chunks():
-            sha256.update(chunk)
-        return sha256.hexdigest()
-
-    def validate_file_type(self):
-        ext = os.path.splitext(self.file.name)[1][1:].lower()
-        if ext not in self.EXTENSION_MAP[self.file_type]:
-            raise ValidationError(
-                f"Invalid extension for {self.get_file_type_display()}. "
-                f"Allowed: {', '.join(self.EXTENSION_MAP[self.file_type])}"
-            )
-
-    @property
-    def filename(self):
-        return os.path.basename(self.file.name)
+    prototype = models.OneToOneField(Prototype, on_delete=models.CASCADE, related_name="attachment")
+    report = models.FileField(upload_to='prototypes/reports/', validators=[FileExtensionValidator(['pdf'])])
+    source_code = models.FileField(upload_to='prototypes/source_code/', validators=[FileExtensionValidator(['zip'])])
 
     def __str__(self):
-        return f"{self.get_file_type_display()} - {self.filename}"
-    
-class AuditLog(models.Model):
-    ACTIONS = [
-        ('create', 'Create'),
-        ('update', 'Update'),
-        ('delete', 'Delete'),
-        ('login', 'Login'),
-        ('download', 'Download'),
-        ('review', 'Review')
-    ]
+        return f"Attachments for {self.prototype.title}"
 
-    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
-    action = models.CharField(max_length=10, choices=ACTIONS)
-    model = models.CharField(max_length=50)
-    object_id = models.CharField(max_length=50)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    metadata = models.JSONField(default=dict)
-
-    class Meta:
-        ordering = ['-timestamp']
-        indexes = [
-            models.Index(fields=['model', 'object_id']),
-            models.Index(fields=['timestamp']),
-        ]
-
-    def __str__(self):
-        return f"{self.user} {self.action} {self.model}:{self.object_id}"
-    

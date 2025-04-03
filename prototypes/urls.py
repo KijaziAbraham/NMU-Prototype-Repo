@@ -4,17 +4,15 @@ from .views import PrototypeViewSet, user_profile
 from .api_views import register_user, login_user
 from .views import (
     UserViewSet, PrototypeViewSet,
-    PrototypeAttachmentViewSet, DepartmentViewSet,
-    AuditLogViewSet, change_password,
+    DepartmentViewSet,
+    change_password,
 )
 
 
 router = DefaultRouter()
 router.register(r'prototypes', PrototypeViewSet, basename="prototype")  
 router.register(r'users', UserViewSet) 
-router.register(r'attachments', PrototypeAttachmentViewSet)
 router.register(r'departments', DepartmentViewSet) 
-router.register(r'audit-logs', AuditLogViewSet, basename='auditlog')
 
 urlpatterns = [
     path('', include(router.urls)),

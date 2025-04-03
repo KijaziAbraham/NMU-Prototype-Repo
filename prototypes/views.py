@@ -1,51 +1,30 @@
-from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.db.models import Case, When, Value, IntegerField
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets,  filters
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
 from rest_framework import status
 import openpyxl
 from django.http import HttpResponse
 from weasyprint import HTML
 from django.template.loader import render_to_string
-from django.contrib.auth import login
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
 from .permissions import IsPrototypeOwner, IsAdmin, IsStaff, IsStudent, IsOwnerOrReadOnly, IsReviewer
 from .serializers import (
     UserSerializer, PrototypeSerializer, PrototypeAttachmentSerializer, 
-    DepartmentSerializer, PrototypeReviewSerializer, AuditLogSerializer, LoginSerializer
+    DepartmentSerializer, PrototypeReviewSerializer,  
 )
-from .models import CustomUser, Prototype, PrototypeAttachment, Department, AuditLog
-from .filters import PrototypeFilter
-from .services import report_service
+from .models import CustomUser, Prototype, PrototypeAttachment, Department
 import logging
 from django.db.models import Q
 from django.contrib.auth import update_session_auth_hash
-
-
 logger = logging.getLogger(__name__)
-
 User = get_user_model()
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser
 
 
-class LoginView(APIView):
-    def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data["user"]
-            login(request, user)
-            return Response({
-                "message": "Login successful",
-                "user": {"id": user.id, "email": user.email, "role": user.role}
-            })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["GET", "PATCH"])  # Allow both GET and PATCH
+@api_view(["GET", "PATCH"])  
 @permission_classes([IsAuthenticated])
 def user_profile(request):
     """Return or update logged-in user's details"""
@@ -113,6 +92,7 @@ class PrototypeViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'barcode', 'storage_location']
     ordering_fields = ['submission_date']
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_queryset(self):
         """Ensure students see their own prototypes first"""
@@ -131,8 +111,8 @@ class PrototypeViewSet(viewsets.ModelViewSet):
         elif user.role == "staff":
             return queryset  
 
-        return queryset         #admin na staff wanaona project zote
-    
+        return queryset         # Admin and staff can see all prototypes
+
     @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated])
     def all_prototypes(self, request):
         """Return all prototypes for staff & admin."""
@@ -144,7 +124,7 @@ class PrototypeViewSet(viewsets.ModelViewSet):
         serializer = PrototypeSerializer(prototypes, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['POST'])
+    @action(detail=True, methods=['POST'], parser_classes=[JSONParser])
     def assign_storage(self, request, pk=None):
         """Allow admins to assign a storage location"""
         user = request.user
@@ -168,27 +148,38 @@ class PrototypeViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-        
-    @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated], parser_classes=[JSONParser])
     def review_prototype(self, request, pk=None):
-        """Staff can review a specific prototype (only approval allowed)."""
+        """Staff and Admin can review a specific prototype (approval and feedback)."""
         user = request.user
 
+        # Ensure the user is either staff or admin
         if user.role not in ["staff", "admin"]:
-            return Response({"error": "Only staff and admins can review prototypes."}, status=403)
+            return Response({"error": "Only staff and admins can review prototypes."}, status=status.HTTP_403_FORBIDDEN)
 
-        prototype = self.get_object()
+        # Get the prototype object
+        try:
+            prototype = self.get_object()
+        except Prototype.DoesNotExist:
+            return Response({"error": "Prototype not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get and validate feedback data from the request
         feedback = request.data.get("feedback", "").strip()
 
         if not feedback:
-            return Response({"error": "Feedback is required."}, status=400)
+            return Response({"error": "Feedback is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        prototype.status = "submitted_reviewed"  
+        # Ensure the prototype status is updated correctly (if it's not already reviewed)
+        if prototype.status == "submitted_reviewed":
+            return Response({"error": "Prototype has already been reviewed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update the prototype with feedback and reviewed status
+        prototype.status = "submitted_reviewed"
         prototype.feedback = feedback
-        prototype.reviewed_by = user
+        prototype.reviewer = user  # Record the staff/admin who reviewed
         prototype.save()
 
-        return Response({"message": "Prototype approved successfully."})
+        return Response({"message": "Prototype reviewed and approved successfully."}, status=status.HTTP_200_OK)
     
     @action(detail=False, methods=["GET"])
     def storage_locations(self, request):
@@ -222,71 +213,6 @@ class PrototypeViewSet(viewsets.ModelViewSet):
         response = HttpResponse(pdf_file, content_type="application/pdf")
         response["Content-Disposition"] = 'attachment; filename="prototypes.pdf"'
         return response
-
-
-class PrototypeAttachmentViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint for managing prototype attachments.
-    """
-    serializer_class = PrototypeAttachmentSerializer
-    permission_classes = [IsAuthenticated, IsPrototypeOwner]
-    queryset = PrototypeAttachment.objects.all()
-
-    def get_queryset(self):
-        """Limit attachments to those owned by the user."""
-        return self.queryset.filter(prototype__student=self.request.user).select_related('prototype')
-
-    @action(detail=False, methods=['post'])
-    def bulk_create(self, request, prototype_pk=None):
-        prototype = get_object_or_404(
-            Prototype,
-            pk=prototype_pk,
-            student=request.user
-        )
-        
-        created_attachments = []
-        errors = []
-        
-        for file in request.FILES.getlist('files'):
-            data = {
-                'prototype': prototype.id,
-                'file_type': request.data.get('file_type', 'other'),
-                'file': file,
-                'description': request.data.get('description', '')
-            }
-            serializer = self.get_serializer(data=data)
-            if serializer.is_valid():
-                serializer.save()
-                created_attachments.append(serializer.data)
-            else:
-                errors.append({
-                    'file': file.name,
-                    'errors': serializer.errors
-                })
-
-        response_data = {
-            'created': created_attachments,
-            'errors': errors
-        }
-        
-        status_code = status.HTTP_207_MULTI_STATUS if errors else status.HTTP_201_CREATED
-        return Response(response_data, status=status_code)
-
-    def create(self, request, *args, **kwargs):
-        request.data._mutable = True
-        request.data['prototype'] = kwargs.get('prototype_pk')
-        request.data._mutable = False
-        return super().create(request, *args, **kwargs)
-    
-
-class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = AuditLog.objects.all()   
-    serializer_class = AuditLogSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ['user', 'action', 'model']
-    ordering = ['-timestamp']
-
 
 
 class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):

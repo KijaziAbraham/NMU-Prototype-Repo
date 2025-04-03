@@ -1,25 +1,5 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model, authenticate
-from .models import CustomUser, Prototype, PrototypeAttachment, Department, AuditLog
-
-
-class LoginSerializer(serializers.Serializer):
-    """
-    Serializer for user login.
-    Validates user credentials and authenticates the user.
-    """
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
-
-    def validate(self, data):
-        email = data.get("email")
-        password = data.get("password")
-        user = authenticate(username=email, password=password)
-
-        if not user:
-            raise serializers.ValidationError("Invalid credentials. Please try again.")
-
-        return {"user": user}
+from .models import CustomUser, Prototype, PrototypeAttachment, Department
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -38,80 +18,61 @@ class DepartmentSerializer(serializers.ModelSerializer):
 
 
 class PrototypeAttachmentSerializer(serializers.ModelSerializer):
-    """
-    Serializer for prototype attachments, providing additional metadata.
-    """
-    filename = serializers.SerializerMethodField()
-    download_url = serializers.SerializerMethodField()
-    file_type_display = serializers.CharField(source='get_file_type_display', read_only=True)
-
     class Meta:
         model = PrototypeAttachment
-        fields = [
-            'id', 'file_type', 'file_type_display', 'file', 'description',
-            'uploaded_at', 'size', 'filename', 'download_url', 'checksum'
-        ]
-        read_only_fields = ['uploaded_at', 'size', 'filename', 'download_url', 'checksum']
-
-    def get_filename(self, obj):
-        return obj.filename
-
-    def get_download_url(self, obj):
-        return obj.download_url
-
-    def validate(self, data):
-        prototype = data.get('prototype')
-        file_type = data.get('file_type')
-
-        if file_type in ['report', 'source']:
-            if PrototypeAttachment.objects.filter(prototype=prototype, file_type=file_type).exists():
-                raise serializers.ValidationError(
-                    f"A {file_type} file already exists for this prototype"
-                )
-        return data
-
+        fields = ['report', 'source_code']
 
 class PrototypeSerializer(serializers.ModelSerializer):
-    """
-    Serializer for prototype details, including nested user and department information.
-    """
-    student = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.filter(role='student')) 
-    department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())
-    reviewer = UserSerializer(read_only=True)
-    attachments = PrototypeAttachmentSerializer(many=True, read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
-    supervisor = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.filter(role="staff"))
+    attachment = PrototypeAttachmentSerializer(required=True)  # Nested Serializer
 
     class Meta:
         model = Prototype
-        fields = '__all__'
-        read_only_fields = ['submission_date', 'last_modified', 'reviewer', 'barcode']
+        fields = [
+            'id', 'student', 'title', 'abstract', 'department',
+            'academic_year', 'supervisor', 'submission_date',
+            'status', 'has_physical_prototype', 'barcode',
+            'storage_location', 'feedback', 'reviewer', 'attachment'
+        ]
+        read_only_fields = ['id', 'submission_date', 'status', 'barcode']
 
     def create(self, validated_data):
-        if 'department' not in validated_data:
-            raise serializers.ValidationError({"department": "This field is required."})
-        return super().create(validated_data)
-    
+        """Handle prototype creation along with attachment files"""
+        attachment_data = validated_data.pop('attachment')  # Extract attachment data
+        prototype = Prototype.objects.create(**validated_data)
+        PrototypeAttachment.objects.create(prototype=prototype, **attachment_data)
+        return prototype
+
+    def update(self, instance, validated_data):
+        """Handle updating prototype along with its attachments"""
+        attachment_data = validated_data.pop('attachment', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update attachment if present
+        if attachment_data:
+            attachment, _ = PrototypeAttachment.objects.get_or_create(prototype=instance)
+            for attr, value in attachment_data.items():
+                setattr(attachment, attr, value)
+            attachment.save()
+
+        return instance
+   
+  
 class PrototypeReviewSerializer(serializers.Serializer):
     """
     Serializer for prototype review submission.
     """
+    feedback = serializers.CharField(required=True)
     status = serializers.ChoiceField(choices=[
         ('submitted_not_reviewed', 'Submitted (Not Reviewed)'),
         ('submitted_reviewed', 'Submitted (Reviewed)'),
     ])
-    feedback = serializers.CharField(required=True)
 
-
-class AuditLogSerializer(serializers.ModelSerializer):
-    """
-    Serializer for audit logs, tracking user actions.
-    """
-    user = UserSerializer(read_only=True)
-    action_display = serializers.CharField(source='get_action_display', read_only=True)
-
-    class Meta:
-        model = AuditLog
-        fields = '__all__'
-
-
+    def update(self, instance, validated_data):
+        # Update the prototype's status and feedback
+        instance.status = validated_data.get('status', instance.status)
+        instance.feedback = validated_data.get('feedback', instance.feedback)
+        instance.save()
+        return instance
